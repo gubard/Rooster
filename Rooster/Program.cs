@@ -1,53 +1,41 @@
-var builder = WebApplication.CreateBuilder(args);
+using System.Collections.Frozen;
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Builder;
+using Nestor.Db.Helpers;
+using Rooster.Contract.Helpers;
+using Rooster.Contract.Models;
+using Rooster.Contract.Services;
+using Zeus.Helpers;
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-var app = builder.Build();
+InsertHelper.AddDefaultInsert(
+    nameof(AlarmEntity),
+    (i, s) => new AlarmEntity[] { new() { Id = i } }.CreateInsertQuery(s)
+);
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+var migration = new Dictionary<int, string>();
+
+foreach (var (key, value) in SqliteMigration.Migrations)
 {
-    app.MapOpenApi();
+    migration.Add(key, value);
 }
 
-app.UseHttpsRedirection();
-
-var summaries = new[]
+foreach (var (key, value) in RoosterMigration.Migrations)
 {
-    "Freezing",
-    "Bracing",
-    "Chilly",
-    "Cool",
-    "Mild",
-    "Warm",
-    "Balmy",
-    "Hot",
-    "Sweltering",
-    "Scorching",
-};
-
-app.MapGet(
-        "/weatherforecast",
-        () =>
-        {
-            var forecast = Enumerable
-                .Range(1, 5)
-                .Select(index => new WeatherForecast(
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-                .ToArray();
-
-            return forecast;
-        }
-    )
-    .WithName("GetWeatherForecast");
-
-app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    migration.Add(key, value);
 }
+
+foreach (var (key, value) in IdempotenceMigration.Migrations)
+{
+    migration.Add(key, value);
+}
+
+await WebApplication
+    .CreateBuilder(args)
+    .CreateAndRunZeusApp<
+        IAlarmService,
+        AlarmDbService,
+        RoosterGetRequest,
+        RoosterPostRequest,
+        RoosterGetResponse,
+        RoosterPostResponse
+    >(migration.ToFrozenDictionary(), RoosterJsonContext.Default.Options, "Rooster");

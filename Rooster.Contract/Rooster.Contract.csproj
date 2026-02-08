@@ -4,4 +4,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Nestor\Nestor.Db\Nestor.Db.csproj" />
+    <ProjectReference
+      Include="..\..\Nestor\Nestor.SourceGenerator\Nestor.SourceGenerator.csproj"
+      ReferenceOutputAssembly="false"
+      OutputItemType="Analyzer"
+    />
+  </ItemGroup>
 </Project>
