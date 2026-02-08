@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Rooster.Contract/Rooster.Contract.csproj" />
+  <Project Path="Rooster/Rooster.csproj" />
+</Solution>

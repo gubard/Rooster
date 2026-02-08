@@ -1,0 +1,6 @@
+@Rooster_HostAddress = http://localhost:5033
+
+GET {{Rooster_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
