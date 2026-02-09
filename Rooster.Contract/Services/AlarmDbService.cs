@@ -102,7 +102,7 @@ public sealed class AlarmDbService
             dbValues.UserId.ToString(),
             idempotentId,
             options.IsUseEvents,
-            request.Edits.Select(x => x.ToEditAlarmEntity()).ToArray(),
+            request.Edits.SelectMany(x => x.ToEditAlarmEntities()).ToArray(),
             ct
         );
 

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Rooster.Contract.Models;
 
 namespace Rooster.Contract.Helpers;
@@ -11,6 +12,7 @@ public static class Mapper
             Id = item.Id,
             Name = item.Name,
             DueDateTime = item.DueDateTime,
+            IsCompleted = item.IsCompleted,
         };
     }
 
@@ -21,6 +23,7 @@ public static class Mapper
             Id = item.Id,
             Name = item.Name,
             DueDateTime = item.DueDateTime,
+            IsCompleted = item.IsCompleted,
         };
     }
 
@@ -28,22 +31,28 @@ public static class Mapper
     {
         return new()
         {
-            Id = item.Id,
+            Ids = [item.Id],
             DueDateTime = item.DueDateTime,
             IsEditDueDateTime = item.IsEditDueDateTime,
             IsEditName = item.IsEditName,
             Name = item.Name,
+            IsCompleted = item.IsCompleted,
         };
     }
 
-    public static EditAlarmEntity ToEditAlarmEntity(this EditAlarm item)
+    public static IEnumerable<EditAlarmEntity> ToEditAlarmEntities(this EditAlarm item)
     {
-        return new(item.Id)
+        foreach (var id in item.Ids)
         {
-            DueDateTime = item.DueDateTime,
-            IsEditDueDateTime = item.IsEditDueDateTime,
-            IsEditName = item.IsEditName,
-            Name = item.Name,
-        };
+            yield return new(id)
+            {
+                DueDateTime = item.DueDateTime,
+                IsEditDueDateTime = item.IsEditDueDateTime,
+                IsEditName = item.IsEditName,
+                Name = item.Name,
+                IsCompleted = item.IsCompleted,
+                IsEditIsCompleted = item.IsEditIsCompleted,
+            };
+        }
     }
 }
