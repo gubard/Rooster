@@ -9,7 +9,7 @@ using Zeus.Helpers;
 
 InsertHelper.AddDefaultInsert(
     nameof(AlarmEntity),
-    (i, s) => new AlarmEntity[] { new() { Id = i } }.CreateInsertQuery(s)
+    i => new AlarmEntity[] { new() { Id = i } }.CreateInsertQuery()
 );
 
 var migration = new Dictionary<int, string>();
