@@ -68,7 +68,7 @@ public sealed class AlarmDbService
 
     public ConfiguredValueTaskAwaitable UpdateAsync(RoosterPostRequest source, CancellationToken ct)
     {
-        return TaskHelper.ConfiguredCompletedTask;
+        return UpdateCore(source, ct).ConfigureAwait(false);
     }
 
     public ConfiguredValueTaskAwaitable UpdateAsync(RoosterGetResponse source, CancellationToken ct)
@@ -78,6 +78,11 @@ public sealed class AlarmDbService
 
     private readonly IFactory<DbValues> _dbValuesFactory;
     private readonly IFactory<DbServiceOptions> _factoryOptions;
+
+    private async ValueTask UpdateCore(RoosterPostRequest source, CancellationToken ct)
+    {
+        await PostAsync(Guid.NewGuid(), source, ct);
+    }
 
     private async ValueTask ExecuteCore(
         Guid idempotentId,
