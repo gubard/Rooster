@@ -11,7 +11,7 @@ namespace Rooster.Contract.Models;
 [JsonSerializable(typeof(Alarm))]
 [JsonSerializable(typeof(AlreadyExistsValidationError))]
 [JsonSerializable(typeof(NotFoundValidationError))]
-public partial class RoosterJsonContext : JsonSerializerContext
+public sealed partial class RoosterJsonContext : JsonSerializerContext
 {
     public static readonly IJsonTypeInfoResolver Resolver;
 
