@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Gaia.Models;
 using Nestor.Db.Models;
 

@@ -1,4 +1,3 @@
-using System;
 using Nestor.Db.Models;
 
 namespace Rooster.Contract.Models;

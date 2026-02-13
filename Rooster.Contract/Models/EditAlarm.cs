@@ -1,5 +1,3 @@
-using System;
-
 namespace Rooster.Contract.Models;
 
 public sealed class EditAlarm

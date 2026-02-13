@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Rooster.Contract.Models;
 
 namespace Rooster.Contract.Helpers;

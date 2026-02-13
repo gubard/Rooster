@@ -1,4 +1,3 @@
-using System;
 using Gaia.Models;
 
 namespace Rooster.Contract.Models;

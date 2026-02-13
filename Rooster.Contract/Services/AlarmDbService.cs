@@ -1,9 +1,4 @@
-using System;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
-using Gaia.Helpers;
 using Gaia.Models;
 using Gaia.Services;
 using Nestor.Db.Helpers;
@@ -73,11 +68,50 @@ public sealed class AlarmDbService
 
     public ConfiguredValueTaskAwaitable UpdateAsync(RoosterGetResponse source, CancellationToken ct)
     {
-        return TaskHelper.ConfiguredCompletedTask;
+        return UpdateCore(source, ct).ConfigureAwait(false);
     }
 
     private readonly IFactory<DbValues> _dbValuesFactory;
     private readonly IFactory<DbServiceOptions> _factoryOptions;
+
+    private async ValueTask UpdateCore(RoosterGetResponse source, CancellationToken ct)
+    {
+        await using var session = await Factory.CreateSessionAsync(ct);
+        var entities = source.Alarms.Select(x => x.ToAlarmEntity()).ToArray();
+        var exists = await session.IsExistsAsync(entities, ct);
+        var inserts = entities.Where(x => !exists.Contains(x.Id)).ToArray();
+        var allIds = entities.Select(x => x.Id).ToArray();
+
+        var deleteIds = await session.GetGuidAsync(
+            new(
+                AlarmsExt.SelectIdsQuery + $" WHERE Id NOT IN ({allIds.ToParameterNames("Id")})",
+                allIds.ToQueryParameters("Id")
+            ),
+            ct
+        );
+
+        var updateQueries = entities
+            .Where(x => exists.Contains(x.Id))
+            .Select(x => x.CreateUpdateAlarmsQuery())
+            .ToArray();
+
+        if (inserts.Length != 0)
+        {
+            await session.ExecuteNonQueryAsync(inserts.CreateInsertQuery(), ct);
+        }
+
+        foreach (var query in updateQueries)
+        {
+            await session.ExecuteNonQueryAsync(query, ct);
+        }
+
+        if (deleteIds.Length != 0)
+        {
+            await session.ExecuteNonQueryAsync(deleteIds.CreateDeleteAlarmsQuery(), ct);
+        }
+
+        await session.CommitAsync(ct);
+    }
 
     private async ValueTask UpdateCore(RoosterPostRequest source, CancellationToken ct)
     {
