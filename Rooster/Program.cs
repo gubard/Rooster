@@ -3,6 +3,7 @@ using Nestor.Db.Helpers;
 using Rooster.Contract.Helpers;
 using Rooster.Contract.Models;
 using Rooster.Contract.Services;
+using Rooster.Db.Services;
 using Zeus.Helpers;
 
 InsertHelper.AddDefaultInsert(

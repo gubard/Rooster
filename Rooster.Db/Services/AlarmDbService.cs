@@ -6,26 +6,9 @@ using Nestor.Db.Models;
 using Nestor.Db.Services;
 using Rooster.Contract.Helpers;
 using Rooster.Contract.Models;
+using Rooster.Contract.Services;
 
-namespace Rooster.Contract.Services;
-
-public interface IAlarmService
-    : IService<RoosterGetRequest, RoosterPostRequest, RoosterGetResponse, RoosterPostResponse>;
-
-public interface IAlarmHttpService
-    : IAlarmService,
-        IHttpService<
-            RoosterGetRequest,
-            RoosterPostRequest,
-            RoosterGetResponse,
-            RoosterPostResponse
-        >;
-
-public interface IAlarmDbService
-    : IAlarmService,
-        IDbService<RoosterGetRequest, RoosterPostRequest, RoosterGetResponse, RoosterPostResponse>;
-
-public interface IAlarmDbCache : IDbCache<RoosterPostRequest, RoosterGetResponse>;
+namespace Rooster.Db.Services;
 
 public sealed class AlarmDbService
     : DbService<RoosterGetRequest, RoosterPostRequest, RoosterGetResponse, RoosterPostResponse>,
