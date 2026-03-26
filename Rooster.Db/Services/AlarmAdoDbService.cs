@@ -10,12 +10,12 @@ using Rooster.Contract.Services;
 
 namespace Rooster.Db.Services;
 
-public sealed class AlarmDbService
-    : DbService<RoosterGetRequest, RoosterPostRequest, RoosterGetResponse, RoosterPostResponse>,
+public sealed class AlarmAdoDbService
+    : AdoDbService<RoosterGetRequest, RoosterPostRequest, RoosterGetResponse, RoosterPostResponse>,
         IAlarmDbService,
         IAlarmDbCache
 {
-    public AlarmDbService(
+    public AlarmAdoDbService(
         IDbConnectionFactory factory,
         IFactory<DbValues> dbValuesFactory,
         IFactory<DbServiceOptions> factoryOptions

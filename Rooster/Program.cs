@@ -32,7 +32,7 @@ await WebApplication
     .CreateBuilder(args)
     .CreateAndRunZeusApp<
         IAlarmService,
-        AlarmDbService,
+        AlarmAdoDbService,
         RoosterGetRequest,
         RoosterPostRequest,
         RoosterGetResponse,
