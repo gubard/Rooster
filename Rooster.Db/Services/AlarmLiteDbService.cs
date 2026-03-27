@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using Gaia.Helpers;
 using Gaia.Models;
 using Gaia.Services;
 using Nestor.Db.LiteDb.Services;
@@ -32,17 +31,17 @@ public sealed class AlarmLiteDbService
         CancellationToken ct
     )
     {
-        using var database = Factory.Create();
-        var collection = database.GetAlarmEntityCollection();
-        var response = new RoosterGetResponse();
-        var alarms = collection.FindAll().Select(x => x.ToAlarmEntity());
+        return GetCore(request, ct).ConfigureAwait(false);
+    }
 
-        if (request.IsGetAlarms)
-        {
-            response.Alarms = alarms.Select(x => x.ToAlarm()).ToArray();
-        }
+    public ConfiguredValueTaskAwaitable UpdateAsync(RoosterPostRequest source, CancellationToken ct)
+    {
+        return UpdateCore(source, ct).ConfigureAwait(false);
+    }
 
-        return TaskHelper.FromResult(response);
+    public ConfiguredValueTaskAwaitable UpdateAsync(RoosterGetResponse source, CancellationToken ct)
+    {
+        return UpdateCore(source, ct).ConfigureAwait(false);
     }
 
     protected override ConfiguredValueTaskAwaitable ExecuteAsync(
@@ -52,10 +51,22 @@ public sealed class AlarmLiteDbService
         CancellationToken ct
     )
     {
+        return ExecuteCore(idempotentId, response, request, ct).ConfigureAwait(false);
+    }
+
+    private readonly IFactory<DbValues> _dbValuesFactory;
+    private readonly IFactory<DbServiceOptions> _factoryOptions;
+
+    private async ValueTask ExecuteCore(
+        Guid idempotentId,
+        RoosterPostResponse response,
+        RoosterPostRequest request,
+        CancellationToken ct
+    )
+    {
         var dbValues = _dbValuesFactory.Create();
         var options = _factoryOptions.Create();
-        using var database = Factory.Create();
-        var collection = database.GetAlarmEntityCollection();
+        using var database = await Factory.CreateAsync(ct);
 
         database.AddEntities(
             dbValues.UserId.ToString(),
@@ -78,19 +89,12 @@ public sealed class AlarmLiteDbService
             request.DeleteIds
         );
 
-        database.SaveChanges();
-
-        return TaskHelper.ConfiguredCompletedTask;
+        await database.SaveChangesAsync(ct);
     }
 
-    public ConfiguredValueTaskAwaitable UpdateAsync(RoosterPostRequest source, CancellationToken ct)
+    private async ValueTask UpdateCore(RoosterGetResponse source, CancellationToken ct)
     {
-        return UpdateCore(source, ct).ConfigureAwait(false);
-    }
-
-    public ConfiguredValueTaskAwaitable UpdateAsync(RoosterGetResponse source, CancellationToken ct)
-    {
-        using var database = Factory.Create();
+        using var database = await Factory.CreateAsync(ct);
         var collection = database.GetAlarmEntityCollection();
         var entities = source.Alarms.Select(x => x.ToAlarmEntity()).ToArray();
 
@@ -131,16 +135,29 @@ public sealed class AlarmLiteDbService
             collection.Delete(Query.In("_id", deleteIds));
         }
 
-        database.SaveChanges();
-
-        return TaskHelper.ConfiguredCompletedTask;
+        await database.SaveChangesAsync(ct);
     }
-
-    private readonly IFactory<DbValues> _dbValuesFactory;
-    private readonly IFactory<DbServiceOptions> _factoryOptions;
 
     private async ValueTask UpdateCore(RoosterPostRequest source, CancellationToken ct)
     {
         await ExecuteAsync(Guid.NewGuid(), new(), source, ct);
+    }
+
+    private async ValueTask<RoosterGetResponse> GetCore(
+        RoosterGetRequest request,
+        CancellationToken ct
+    )
+    {
+        using var database = await Factory.CreateAsync(ct);
+        var collection = database.GetAlarmEntityCollection();
+        var response = new RoosterGetResponse();
+        var alarms = collection.FindAll().Select(x => x.ToAlarmEntity());
+
+        if (request.IsGetAlarms)
+        {
+            response.Alarms = alarms.Select(x => x.ToAlarm()).ToArray();
+        }
+
+        return response;
     }
 }
