@@ -66,76 +66,85 @@ public sealed class AlarmLiteDbService
     {
         var dbValues = _dbValuesFactory.Create();
         var options = _factoryOptions.Create();
-        using var database = await Factory.CreateAsync(ct);
+        var database = await Factory.CreateAsync(ct);
 
-        database.AddEntities(
-            dbValues.UserId.ToString(),
-            idempotentId,
-            options.IsUseEvents,
-            request.Creates.Select(x => x.ToAlarmEntity()).ToArray()
+        await database.ExecuteAsync(
+            db =>
+            {
+                db.AddEntities(
+                    dbValues.UserId.ToString(),
+                    idempotentId,
+                    options.IsUseEvents,
+                    request.Creates.Select(x => x.ToAlarmEntity()).ToArray()
+                );
+
+                db.EditEntities(
+                    dbValues.UserId.ToString(),
+                    idempotentId,
+                    options.IsUseEvents,
+                    request.Edits.SelectMany(x => x.ToEditAlarmEntities()).ToArray()
+                );
+
+                db.DeleteEntities(
+                    dbValues.UserId.ToString(),
+                    idempotentId,
+                    options.IsUseEvents,
+                    request.DeleteIds
+                );
+            },
+            ct
         );
-
-        database.EditEntities(
-            dbValues.UserId.ToString(),
-            idempotentId,
-            options.IsUseEvents,
-            request.Edits.SelectMany(x => x.ToEditAlarmEntities()).ToArray()
-        );
-
-        database.DeleteEntities(
-            dbValues.UserId.ToString(),
-            idempotentId,
-            options.IsUseEvents,
-            request.DeleteIds
-        );
-
-        await database.SaveChangesAsync(ct);
     }
 
     private async ValueTask UpdateCore(RoosterGetResponse source, CancellationToken ct)
     {
-        using var database = await Factory.CreateAsync(ct);
-        var collection = database.GetAlarmEntityCollection();
-        var entities = source.Alarms.Select(x => x.ToAlarmEntity()).ToArray();
+        var database = await Factory.CreateAsync(ct);
 
-        var exists = entities
-            .Where(x => collection.Exists(Query.EQ("_id", x.Id)))
-            .Select(x => x.Id)
-            .ToArray();
+        await database.ExecuteAsync(
+            db =>
+            {
+                var collection = db.GetAlarmEntityCollection();
+                var entities = source.Alarms.Select(x => x.ToAlarmEntity()).ToArray();
 
-        var inserts = entities
-            .Where(x => !exists.Contains(x.Id))
-            .Select(x => x.ToBsonDocument())
-            .ToArray();
+                var exists = entities
+                    .Where(x => collection.Exists(Query.EQ("_id", x.Id)))
+                    .Select(x => x.Id)
+                    .ToArray();
 
-        var allIds = entities.Select(x => x.Id).ToArray();
+                var inserts = entities
+                    .Where(x => !exists.Contains(x.Id))
+                    .Select(x => x.ToBsonDocument())
+                    .ToArray();
 
-        var deleteIds = collection
-            .Find(Query.Not(Query.In("_id", allIds.Select(x => new BsonValue(x)))))
-            .Select(x => x["_id"])
-            .ToArray();
+                var allIds = entities.Select(x => x.Id).ToArray();
 
-        var updates = entities
-            .Where(x => exists.Contains(x.Id))
-            .Select(x => x.ToBsonDocument())
-            .ToArray();
+                var deleteIds = collection
+                    .Find(Query.Not(Query.In("_id", allIds.Select(x => new BsonValue(x)))))
+                    .Select(x => x["_id"])
+                    .ToArray();
 
-        if (inserts.Length != 0)
-        {
-            collection.Insert(inserts);
-        }
+                var updates = entities
+                    .Where(x => exists.Contains(x.Id))
+                    .Select(x => x.ToBsonDocument())
+                    .ToArray();
 
-        if (updates.Length != 0)
-        {
-            collection.Update(updates);
-        }
+                if (inserts.Length != 0)
+                {
+                    collection.Insert(inserts);
+                }
 
-        if (deleteIds.Length != 0)
-        {
-            collection.Delete(Query.In("_id", deleteIds));
-        }
+                if (updates.Length != 0)
+                {
+                    collection.Update(updates);
+                }
 
-        await database.SaveChangesAsync(ct);
+                if (deleteIds.Length != 0)
+                {
+                    collection.Delete(Query.In("_id", deleteIds));
+                }
+            },
+            ct
+        );
     }
 
     private async ValueTask UpdateCore(RoosterPostRequest source, CancellationToken ct)
@@ -148,16 +157,23 @@ public sealed class AlarmLiteDbService
         CancellationToken ct
     )
     {
-        using var database = await Factory.CreateAsync(ct);
-        var collection = database.GetAlarmEntityCollection();
-        var response = new RoosterGetResponse();
-        var alarms = collection.FindAll().Select(x => x.ToAlarmEntity());
+        var database = await Factory.CreateAsync(ct);
 
-        if (request.IsGetAlarms)
-        {
-            response.Alarms = alarms.Select(x => x.ToAlarm()).ToArray();
-        }
+        return await database.ExecuteAsync(
+            db =>
+            {
+                var collection = db.GetAlarmEntityCollection();
+                var response = new RoosterGetResponse();
+                var alarms = collection.FindAll().Select(x => x.ToAlarmEntity());
 
-        return response;
+                if (request.IsGetAlarms)
+                {
+                    response.Alarms = alarms.Select(x => x.ToAlarm()).ToArray();
+                }
+
+                return response;
+            },
+            ct
+        );
     }
 }
