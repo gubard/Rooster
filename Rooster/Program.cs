@@ -37,4 +37,8 @@ await WebApplication
         RoosterPostRequest,
         RoosterGetResponse,
         RoosterPostResponse
-    >(migration.ToFrozenDictionary(), RoosterJsonContext.Default.Options, "Rooster");
+    >(
+        migration.ToFrozenDictionary(),
+        "Rooster",
+        builder => builder.Services.AddSingleton(RoosterJsonContext.Default.Options)
+    );
