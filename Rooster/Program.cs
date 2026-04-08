@@ -1,14 +1,15 @@
 using System.Collections.Frozen;
 using Nestor.Db.Helpers;
+using Nestor.Db.LiteDb.Helpers;
 using Rooster.Contract.Helpers;
 using Rooster.Contract.Models;
 using Rooster.Contract.Services;
 using Rooster.Db.Services;
 using Zeus.Helpers;
 
-InsertHelper.AddDefaultInsert(
+DefaultBsonDocument.AddDefaultBsonDocument(
     nameof(AlarmEntity),
-    i => new AlarmEntity[] { new() { Id = i } }.CreateInsertQuery()
+    i => new AlarmEntity { Id = i }.ToBsonDocument()
 );
 
 var migration = new Dictionary<int, string>();
