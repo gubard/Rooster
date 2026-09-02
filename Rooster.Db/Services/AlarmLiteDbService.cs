@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Gaia.Helpers;
 using Gaia.Models;
 using Gaia.Services;
 using Nestor.Db.LiteDb.Services;
@@ -16,7 +17,7 @@ public sealed class AlarmLiteDbService
         IAlarmDbCache
 {
     public AlarmLiteDbService(
-        IDatabaseFactory factory,
+        IUltraLiteDatabaseFactory factory,
         IFactory<DbValues> dbValuesFactory,
         IFactory<DbServiceOptions> factoryOptions
     )
@@ -75,7 +76,7 @@ public sealed class AlarmLiteDbService
                     dbValues.UserId.ToString(),
                     idempotentId,
                     options.IsUseEvents,
-                    request.Creates.Select(x => x.ToAlarmEntity()).ToArray()
+                    Enumerable.Select(request.Creates, x => x.ToAlarmEntity()).ToArray()
                 );
 
                 db.EditEntities(
@@ -91,6 +92,8 @@ public sealed class AlarmLiteDbService
                     options.IsUseEvents,
                     request.DeleteIds
                 );
+
+                return TaskHelper.ConfiguredCompletedTask;
             },
             ct
         );
@@ -104,7 +107,7 @@ public sealed class AlarmLiteDbService
             db =>
             {
                 var collection = db.GetAlarmEntityCollection();
-                var entities = source.Alarms.Select(x => x.ToAlarmEntity()).ToArray();
+                var entities = Enumerable.Select(source.Alarms, x => x.ToAlarmEntity()).ToArray();
 
                 var exists = entities
                     .Where(x => collection.Exists(Query.EQ("_id", x.Id)))
@@ -116,10 +119,12 @@ public sealed class AlarmLiteDbService
                     .Select(x => x.ToBsonDocument())
                     .ToArray();
 
-                var allIds = entities.Select(x => x.Id).ToArray();
+                var allIds = Enumerable.Select(entities, x => x.Id).ToArray();
 
                 var deleteIds = collection
-                    .Find(Query.Not(Query.In("_id", allIds.Select(x => new BsonValue(x)))))
+                    .Find(
+                        Query.Not(Query.In("_id", Enumerable.Select(allIds, x => new BsonValue(x))))
+                    )
                     .Select(x => x["_id"])
                     .ToArray();
 
@@ -142,6 +147,8 @@ public sealed class AlarmLiteDbService
                 {
                     collection.Delete(Query.In("_id", deleteIds));
                 }
+
+                return TaskHelper.ConfiguredCompletedTask;
             },
             ct
         );
@@ -171,7 +178,7 @@ public sealed class AlarmLiteDbService
                     response.Alarms = alarms.Select(x => x.ToAlarm()).ToArray();
                 }
 
-                return response;
+                return TaskHelper.FromResult(response);
             },
             ct
         );
